@@ -1,4 +1,4 @@
-# Amortizing intractable inference in diffusion models\\for vision, language, and control
+# Amortizing intractable inference in diffusion models for vision, language, and control
 
 This repository contains code for learning posteriors with diffusion priors and arbitrary constraints using _relative trajectory balance_ (RTB) introduced in
 
