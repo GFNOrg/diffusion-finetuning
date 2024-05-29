@@ -997,11 +997,12 @@ def main():
       log_with=args.report_to,
       project_config=accelerator_project_config,
   )
-  accelerator.init_trackers(
-      project_name="SDGFN",
-      config=vars(args),
-      init_kwargs={"wandb": {"entity": "swish"}}
-      )
+  if args.report_to == "wandb":
+    accelerator.init_trackers(
+        project_name="project_name",
+        config=vars(args),
+        init_kwargs={"wandb": {"entity": "entity_namy"}}
+        )
   accelerator.trackers[0].run.name = f'DPOK_{args.single_prompt}_rw{args.reward_weight}'
 
   # Make one log on every process with the configuration for debugging.
@@ -1453,7 +1454,7 @@ def main():
       if accelerator.is_main_process:
         if count % 5 == 0:
 
-            if count % 100 == 0:
+            if count % 100 == 0 and args.report_to == "wandb":
               for i, img in enumerate(image):
                 accelerator.log({"Image {}".format(i): wandb.Image(img)}, step=count)
 

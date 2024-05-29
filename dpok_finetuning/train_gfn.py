@@ -1070,17 +1070,13 @@ def main():
       project_config=accelerator_project_config,
   )
   
-  accelerator.init_trackers(
-    project_name="SDGFN", 
-    config=vars(args),
-    init_kwargs={"wandb": {"entity": "swish"}}
-    )
-
-  accelerator.init_trackers(
-      project_name="SDGFN",
+  if args.report_to == 'wandb':
+    accelerator.init_trackers(
+      project_name="project_name", 
       config=vars(args),
-      init_kwargs={"wandb": {"entity": "swish"}}
+      init_kwargs={"wandb": {"entity": "entity_name"}}
       )
+
   if args.annealing == 1:
     accelerator.trackers[0].run.name = f'GFN_{args.single_prompt}_min_rw{args.min_rw}_max_rw{args.max_rw}_annealing'
   else:
@@ -1542,7 +1538,7 @@ def main():
         print(f"count: [{count} / {args.max_train_steps // args.p_step}]")
         
         if count % 5 == 0:
-            if count % 100 == 0:
+            if count % 100 == 0 and args.report_to == 'wandb':
               for i, img in enumerate(image):
                 accelerator.log({"Image {}".format(i): wandb.Image(img)}, step=count)
 

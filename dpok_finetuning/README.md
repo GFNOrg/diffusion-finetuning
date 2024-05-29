@@ -1,4 +1,6 @@
-# Codebase adapted from the official [DPOK: Reinforcement Learning for Fine-tuning Text-to-Image Diffusion Models](https://arxiv.org/abs/2305.16381) codebase - [official repository] (https://github.com/google-research/google-research/tree/master/dpok).
+# Codebase adapted from the official [DPOK: Reinforcement Learning for Fine-tuning Text-to-Image Diffusion Models](https://github.com/google-research/google-research/tree/master/dpok).
+
+See the [DPOK paper](https://arxiv.org/abs/2305.16381) for reference.
 
 ![](./img/rabbit.gif)
 
@@ -34,12 +36,10 @@ pip uninstall accelerate
 pip install accelerate==0.17.0
 ```
 
-## Training
+## DPOK Training
 
-### For a single prompt
-
-```bash
-accelerate launch train_online_pg.py --p_batch_size 4 --reward_weight 10 --kl_weight 0.01  --learning_rate 1e-5 --single_flag 1 --single_prompt "A green colored rabbit." --gradient_accumulation_steps 12 --clip_norm 0.1 --g_batch_size 10 --multi_gpu 0 --v_flag 1
+```
+accelerate launch train_online_pg.py --p_batch_size 8 --reward_weight 10 --kl_weight 0.01  --learning_rate 1e-5 --single_flag 1 --single_prompt "A green colored rabbit." --gradient_accumulation_steps 12 --clip_norm 0.1 --g_batch_size 10 --multi_gpu 0 --v_flag 1 --output_dir 'green_rabbit' [--report_to "wandb"]
 ```
 
 Explanation of the arguments:
@@ -57,13 +57,10 @@ Explanation of the arguments:
 
 The LoRA weights and tensorboard logs will be saved under `./online_model/img_reward_0/pre_train/single_prompt/prompt_name`.
 
-### For multiple prompts
-
-```bash
-accelerate launch train_online_pg.py --p_batch_size 2 --reward_weight 1000 --kl_weight 0.1  --learning_rate 1e-5 --single_flag 0 --prompt_path ./dataset/drawbench/data_meta.json --gradient_accumulation_steps 12 --clip_norm 0.1 --g_batch_size 6 --multi_gpu 1 --max_train_steps 100000 --v_flag 1
+## RTB Training
 ```
-
-For the format of the prompt dataset, please refer to `./dataset/drawbench/data_meta.json` as an example. 
+accelerate launch train_gfn.py --p_batch_size 8 --reward_weight 1.0 --learning_rate 1e-5 --single_flag 1 --single_prompt "A green colored rabbit." --gradient_accumulation_steps 12 --clip_norm 0.1 --g_batch_size 10 --multi_gpu 0 --v_flag 0 --output_dir 'green_rabbit' [--report_to "wandb"]
+```
 
 ## Test
 Put the lora weights under `./test`, and run `test.py --prompt "A green colored rabbit."`. One can modify the test prompt and model path as needed in the arguments.

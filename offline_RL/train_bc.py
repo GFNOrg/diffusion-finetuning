@@ -39,9 +39,9 @@ def parse_args():
         help="if toggled, cuda will be enabled by default")
     parser.add_argument("--track", type=lambda x: bool(strtobool(x)), default=False, nargs="?", const=True,
         help="if toggled, this experiment will be tracked with Weights and Biases")
-    parser.add_argument("--wandb-project-name", type=str, default="advantage-diffusion",
+    parser.add_argument("--wandb-project-name", type=str, default="project-name",
         help="the wandb's project name")
-    parser.add_argument("--wandb-entity", type=str, default='swish',
+    parser.add_argument("--wandb-entity", type=str, default='entity-name',
         help="the entity (team) of wandb's project")
 
     parser.add_argument("--env-id", type=str, default="hopper-medium-expert",

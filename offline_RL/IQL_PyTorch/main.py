@@ -117,7 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--discount', type=float, default=0.99)
     parser.add_argument('--hidden-dim', type=int, default=256)
     parser.add_argument('--n-hidden', type=int, default=2)
-    parser.add_argument('--n-steps', type=int, default=5*(10**7))
+    parser.add_argument('--n-steps', type=int, default=(10**7))
     parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--learning-rate', type=float, default=3e-4)
     parser.add_argument('--alpha', type=float, default=0.005)
@@ -129,8 +129,8 @@ if __name__ == '__main__':
     parser.add_argument('--max-episode-steps', type=int, default=1000)
     parser.add_argument("--track", type=lambda x: bool(strtobool(x)), default=False, nargs="?", const=True,
         help="if toggled, this experiment will be tracked with Weights and Biases")
-    parser.add_argument("--wandb-project-name", type=str, default="advantage-diffusion",
+    parser.add_argument("--wandb-project-name", type=str, default="project-name",
         help="the wandb's project name")
-    parser.add_argument("--wandb-entity", type=str, default='swish',
+    parser.add_argument("--wandb-entity", type=str, default='entity-name',
         help="the entity (team) of wandb's project")
     main(parser.parse_args())
