@@ -1,0 +1,2 @@
+from .twenty_five_gmm import TwentyFiveGaussianMixture
+from .posterior_2Dgmm import Posterior2DGaussianMixture
