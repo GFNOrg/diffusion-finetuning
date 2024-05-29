@@ -1,5 +1,5 @@
-# Codebase adapted from the official [DPOK: Reinforcement Learning for Fine-tuning Text-to-Image Diffusion Models](https://github.com/google-research/google-research/tree/master/dpok).
-
+# Text-to-image with Stable Diffusion
+Codebase adapted from the official [DPOK: Reinforcement Learning for Fine-tuning Text-to-Image Diffusion Models](https://github.com/google-research/google-research/tree/master/dpok).
 See the [DPOK paper](https://arxiv.org/abs/2305.16381) for reference.
 
 ![](./img/rabbit.gif)
