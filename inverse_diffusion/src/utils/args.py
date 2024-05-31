@@ -71,6 +71,8 @@ def fetch_args(experiment_run=True, exp_prepend='exp'):
     parser.add_argument('--loss_type', type=str, default='l2', help='Loss type to use for regular diffusion training.')
     parser.add_argument('-age', '--accumulate_gradient_every', default=1, type=int, help='Number of iterations to accumulate gradient for.')
     parser.add_argument('--detach_freq', default=0., type=float, help='Fraction of steps on which not to train')
+    parser.add_argument('--detach_cut_off', default=1., type=float, help='Fraction of steps to keep from t=1 (full noise).')
+
     parser.add_argument('--back_and_forth', default=False, type=strtobool, help='Whether to train based on back and forth trajectories.')
     parser.add_argument('--bf_length', default=50, type=int, help='backward steps in the back and forth learning algoritm')
     parser.add_argument('--drift_only', default=False, type=strtobool, help='Whether to train only with drift model.')

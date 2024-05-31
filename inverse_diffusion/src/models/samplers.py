@@ -459,6 +459,7 @@ class PosteriorPriorDGFN(nn.Module):
             sampling_length=100,
             ddim_sampling_eta=0.,
             mixed_precision=False,
+            detach_cut_off=1.,
             use_cuda=False,
             transforms=None,
             lora=True,
@@ -483,6 +484,7 @@ class PosteriorPriorDGFN(nn.Module):
         else:
             self.context = NoContext()
 
+        self.detach_cut_off = detach_cut_off
         self.dim = dim
         self.traj_length = traj_length
         self.sampling_length = sampling_length
@@ -492,12 +494,12 @@ class PosteriorPriorDGFN(nn.Module):
 
         # ----------------------------------------------
         prior_node = HGFNode(policy_model=prior_policy_model,
-                                      x_dim=dim,
-                                      sampling_step=self.sampling_step,
-                                      ddim=self.ddim,
-                                      train=False,
-                                      checkpointing=checkpointing,
-                                      device=self.device)
+                             x_dim=dim,
+                             sampling_step=self.sampling_step,
+                             ddim=self.ddim,
+                             train=False,
+                             checkpointing=checkpointing,
+                             device=self.device)
         self.register_module('prior_node', prior_node)
 
         posterior_node = HGFNode(policy_model=posterior_policy_model,
@@ -542,7 +544,7 @@ class PosteriorPriorDGFN(nn.Module):
                 print("HF login succesfull!")
                 login(token=hf_token)
 
-                self.hub_model_id = f"{hb.whoami()['name']}/{self.exp_name}"  # xkronosx
+                self.hub_model_id = f"{hb.whoami()['name']}/{self.exp_name}"
                 self.repo_id = create_repo(
                     repo_id=self.hub_model_id, exist_ok=True
                 ).repo_id
@@ -570,7 +572,7 @@ class PosteriorPriorDGFN(nn.Module):
         self.classifier = classifier
 
     def get_scheduler(self):
-        return self.posterior_node.scheduler
+        return self.posterior_node.policy.scheduler
 
     def get_schedule_args(self):
         return {
@@ -589,10 +591,19 @@ class PosteriorPriorDGFN(nn.Module):
             else:
                 return self.sample_fwd(*args, **kwargs)
 
-    def sample_fwd(self, batch_size=None, x_start=None, sample_from_prior=False, detach_freq=0., sampling_length=None):
+    def sample_fwd(
+            self,
+            batch_size=None,
+            x_start=None,
+            sample_from_prior=False,
+            detach_freq=0.,
+            detach_cut_off=None,
+            sampling_length=None
+    ):
 
         assert batch_size is not None, "provide batch_size for sample_fwd"
         sampling_length = sampling_length if sampling_length is not None else self.sampling_length
+        detach_cut_off = detach_cut_off if detach_cut_off is not None else self.detach_cut_off
 
         return_dict = {}
 
@@ -610,7 +621,9 @@ class PosteriorPriorDGFN(nn.Module):
         scheduler.set_timesteps(sampling_length)
         sampling_times = scheduler.timesteps
 
-        times_to_detach = np.random.choice([t for t in sampling_times], int(sampling_length * detach_freq), replace=False)
+        times_to_detach = np.random.choice([t.item() for t in sampling_times], int(sampling_length * detach_freq), replace=False).tolist()
+        times_to_detach += sampling_times[sampling_times > detach_cut_off*scheduler.config.num_train_timesteps].tolist()
+        times_to_detach = set(times_to_detach)
 
         for i, t in tqdm(enumerate(sampling_times), total=len(sampling_times)):
 
@@ -693,20 +706,20 @@ class PosteriorPriorDGFN(nn.Module):
             step_args.update(t_specific_args)
 
             # -- make a backward step in x by posterior model --
-            new_x = self.posterior_node(x, t, **step_args)
+            new_x = self.posterior_node(x, t, **step_args).detach()
 
             # get posterior pf
-            return_dict['logpf_posterior_b'] += maybe_detach(self.posterior_node.get_logpf(x=x), t, times_to_detach)
+            return_dict['logpf_posterior_b'] += maybe_detach(self.posterior_node.get_logpf(x=x.detach()), t, times_to_detach)
 
             # ------ compute prior pf for posterior step --------
             # update internal values of pfs and logvar for prior -- inplace
             self.prior_node(x, t, **step_args)
 
             # get prior pf, given posterior move
-            return_dict['logpf_prior_b'] += maybe_detach(self.prior_node.get_logpf(x=x), t, times_to_detach)
+            return_dict['logpf_prior_b'] += maybe_detach(self.prior_node.get_logpf(x=x.detach()), t, times_to_detach)
             # ---------------------------------------------------
 
-            x = new_x.detach()
+            x = new_x
 
         # ---------------------------------------------------
         # ------------------ Move Forward  ------------------
@@ -725,7 +738,7 @@ class PosteriorPriorDGFN(nn.Module):
             step_args.update(t_specific_args)
 
             # -- make a step in x by posterior model --
-            new_x = self.posterior_node(x, t, **step_args)
+            new_x = self.posterior_node(x, t, **step_args).detach()
 
             # get posterior pf
             return_dict['logpf_posterior_f'] += maybe_detach(self.posterior_node.get_logpf(x=new_x), t, times_to_detach)
@@ -739,7 +752,7 @@ class PosteriorPriorDGFN(nn.Module):
             return_dict['logpf_prior_f'] += maybe_detach(self.prior_node.get_logpf(x=new_x), t, times_to_detach)
             # ---------------------------------------------------
 
-            x = new_x.detach()
+            x = new_x
 
         if self.transforms is not None:
             x = self.transforms(x)

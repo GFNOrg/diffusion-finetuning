@@ -1,16 +1,15 @@
-from diffusers import get_cosine_schedule_with_warmup
-
+from diffusers import DDPMScheduler, DDIMScheduler, DDPMPipeline
+from diffusers.models.unet_2d import UNet2DModel
 from models.denoisers import ScoreNet, Unet
 from utils.args import fetch_args
 from utils.data_loaders import get_dataset
+from utils.diffusers.schedulers.scheduling_ddpm_gfn import DDPMGFNScheduler
 from utils.pytorch_utils import *
-from utils.diffusion import GaussianDiffusion, DiffTrainer
-from diffusers.models.unet_2d import UNet2DModel
+from utils.diffusion import GaussianDiffusion, DiffTrainer, DiffuserTrainer, TrainingConfig
+from diffusers.optimization import get_cosine_schedule_with_warmup
 
 import torch as T
 import numpy as np
-
-from utils.visualization import plot_samples
 
 # get arguments for the run
 args, state = fetch_args(exp_prepend="train_prior")
@@ -51,41 +50,60 @@ train_dataset = data_dict['train_data']
 train_loader = data_dict['train_loader']
 x_dim = (args.image_size, args.image_size, args.channels)
 
-fwd_policy = UNet2DModel(
-    sample_size=args.image_size,  # the target image resolution
-    in_channels=args.channels,  # the number of input channels, 3 for RGB images
-    out_channels=args.channels,  # the number of output channels
-    layers_per_block=2,  # how many ResNet layers to use per UNet block
-    block_out_channels=args.block_out_channels
+# model = UNet2DModel(
+#     sample_size=args.image_size,  # the target image resolution
+#     in_channels=args.channels,  # the number of input channels, 3 for RGB images
+#     out_channels=args.channels,  # the number of output channels
+#     layers_per_block=2,  # how many ResNet layers to use per UNet block
+#     block_out_channels=args.block_out_channels
+# )
+# TO REMOVE
+model_id = "google/ddpm-celebahq-256"
+ddpm = DDPMPipeline.from_pretrained(model_id)
+noise_scheduler = ddpm.scheduler
+model = ddpm.unet
+model.train()
+
+noise_scheduler = DDPMGFNScheduler.from_config(noise_scheduler.config)
+noise_scheduler.variance_type = 'fixed_large'
+noise_scheduler.config.variance_type = 'fixed_large'
+noise_scheduler.config['variance_type'] = 'fixed_large'
+########
+
+# model = UNet2DModel(
+#     sample_size=args.image_size,  # the target image resolution
+#     in_channels=args.channels,  # the number of input channels, 3 for RGB images
+#     out_channels=args.channels,  # the number of output channels
+#     layers_per_block=2,  # how many ResNet layers to use per UNet block
+#     block_out_channels=args.block_out_channels
+# )
+
+print(f'Total params: \nFwd policy model: {(sum(p.numel() for p in model.parameters()) / 1e6):.2f}M ')
+
+
+# noise_scheduler = DDPMGFNScheduler(
+#     num_train_timesteps=args.traj_length,
+#     beta_end=0.02,
+#     beta_schedule="linear",
+#     beta_start=0.0001,
+#     clip_sample=True,
+#     variance_type='fixed_large'
+# )
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+lr_scheduler = get_cosine_schedule_with_warmup(
+    optimizer=optimizer,
+    num_warmup_steps=500,
+    num_training_steps=args.epochs,
 )
 
-diffusion = GaussianDiffusion(
-    fwd_policy,
-    image_size=args.image_size,
-    timesteps=args.traj_length,  # number of steps
-    sampling_timesteps=args.sampling_length,
-    beta_schedule='linear',
-    objective='pred_v'
-)
-
-trainer = DiffTrainer(
-    diffusion,
-    train_dataset,
-    train_loader,
-    logger,
-    objective='v_prediction',
-    results_folder=args.save_folder,
-    train_batch_size=args.batch_size,
-    train_lr=1e-4,
-    train_num_steps=args.epochs,
-    workers=args.workers,
-    num_samples=args.plot_batch_size,
-    device=args.device,
-    show_figures=args.show_figures,
-    save_figures=args.save_figures,
-    push_to_hf=args.push_to_hf,
-    exp_name=args.exp_name,
-    inception_block_idx=args.fid_inception_block
+trainer = DiffuserTrainer(
+    config=TrainingConfig(args),
+    model=model,
+    noise_scheduler=noise_scheduler,
+    optimizer=optimizer,
+    train_dataloader=data_dict['train_loader'],
+    lr_scheduler=lr_scheduler
 )
 
 trainer.train()

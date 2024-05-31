@@ -1293,6 +1293,7 @@ class DiffuserTrainer:
             self.noise_scheduler = pipeline.scheduler
 
             self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            self.lr_scheduler.last_epoch = checkpoint["scheduler_last_epoch"]
             it = checkpoint["it"]
             print(f"***** RESUMING PREVIOUS RUN AT IT={it}")
 
@@ -1302,8 +1303,6 @@ class DiffuserTrainer:
         model, optimizer, train_dataloader, lr_scheduler = self.accelerator.prepare(
             self.model, self.optimizer, self.train_dataloader, self.lr_scheduler
         )
-
-        global_step = 0
 
         # train the model
         while it < self.config.num_epochs:
@@ -1339,47 +1338,51 @@ class DiffuserTrainer:
                     optimizer.zero_grad()
 
                 progress_bar.update(1)
-                logs = {"loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0], "step": global_step}
+                logs = {"loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0], "step": it}
                 progress_bar.set_postfix(**logs)
 
-                global_step += 1
-
                 if self.accelerator.is_main_process:
-                    pipeline = DDPMPipeline(unet=self.accelerator.unwrap_model(model),
-                                            scheduler=DDPMScheduler.from_config(self.noise_scheduler.config))
 
-                    img_filename = None
-                    # After each epoch you optionally sample some demo images with evaluate() and save the model
-                    if (it % self.config.save_image_epochs == 0
+                    with torch.no_grad():
+
+                        pipeline = DDPMPipeline(unet=self.accelerator.unwrap_model(model),
+                                                scheduler=DDPMScheduler.from_config(self.noise_scheduler.config))
+
+                        img_filename = None
+                        # After each epoch you optionally sample some demo images with evaluate() and save the model
+                        if (it % self.config.save_image_epochs == 0
+                                or it == self.config.num_epochs - 1):
+                            img_filename = evaluate(
+                                batch_size=self.config.eval_batch_size,
+                                epoch=it,
+                                pipeline=pipeline,
+                                folder=self.config.output_dir,
+                                inference_steps=self.config.inference_steps,
+                                seed=self.config.seed
+                            )
+
+                        if img_filename is not None:
+                            image = wandb.Image(img_filename, caption=f"it: {it}")
+                            logs['samples'] = image
+
+                        wandb.log(logs, step=it)  # log results in wandb
+
+                        # After each epoch you optionally sample some demo images with evaluate() and save the model
+                        if (it % self.config.save_model_epochs == 0
                             or it == self.config.num_epochs - 1):
-                        img_filename = evaluate(
-                            batch_size=self.config.eval_batch_size,
-                            epoch=it,
-                            pipeline=pipeline,
-                            folder=self.config.output_dir,
-                            inference_steps=self.config.inference_steps,
-                            seed=self.config.seed
-                        )
+                            torch.save({"it": it,
+                                        "optimizer_state_dict": self.optimizer.state_dict(),
+                                        "scheduler_last_epoch": self.lr_scheduler.last_epoch},
+                                       self.checkpoint_file)
+                            pipeline.save_pretrained(self.checkpoint_dir)
 
-                    if img_filename is not None:
-                        image = wandb.Image(img_filename, caption=f"it: {it}")
-                        logs['samples'] = image
-
-                    wandb.log(logs, step=global_step)  # log results in wandb
-
-                    # After each epoch you optionally sample some demo images with evaluate() and save the model
-                    if (it % self.config.save_model_epochs == 0
-                        or it == self.config.num_epochs - 1):
-                        torch.save({"it": it, "optimizer_state_dict": optimizer.state_dict()}, self.checkpoint_file)
-                        pipeline.save_pretrained(self.checkpoint_dir)
-
-                    if it % 50000 == 0 and self.config.push_to_hf:
-                        upload_folder(
-                            repo_id=self.repo_id,
-                            folder_path=self.config.output_dir,
-                            commit_message=f"Iteration {it}",
-                            ignore_patterns=["step_*", "epoch_*", "wandb*"],
-                        )
+                        if it % 50000 == 0 and self.config.push_to_hf:
+                            upload_folder(
+                                repo_id=self.repo_id,
+                                folder_path=self.config.output_dir,
+                                commit_message=f"Iteration {it}",
+                                ignore_patterns=["step_*", "epoch_*", "wandb*"],
+                            )
 
                 it += 1
 

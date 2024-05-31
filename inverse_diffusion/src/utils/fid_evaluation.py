@@ -180,7 +180,7 @@ class SCOREEvaluation:
         res = {}
 
         scores_fs = {
-            'DIVERSITY': DIVERSITY(),
+            'COS-SIMILARITY': DIVERSITY(),
             'FID': FID(),
             'FLD': FLD(eval_feat="train"),
             # 'AuthPct': AuthPct(),

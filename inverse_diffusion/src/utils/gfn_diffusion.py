@@ -149,6 +149,7 @@ def load_PPDGFN_from_diffusers(args):
                                   drift_model=drift_model,
                                   mixed_precision=ddpm.unet.dtype == torch.float16,
                                   use_cuda=args.use_cuda,
+                                  detach_cut_off=args.detach_cut_off,
                                   transforms=tfs,
                                   lora=args.lora,
                                   push_to_hf=args.push_to_hf,
@@ -448,7 +449,7 @@ class GFNFinetuneTrainer(FinetuneTrainer):
 
     def resume(self):
         """handles resuming of training from experiment folder"""
-        if wandb.run.resumed:
+        if wandb.run.resumed and file_exists(self.checkpoint_file):
             checkpoint = torch.load(self.checkpoint_file)
             self.sampler.load(self.checkpoint_dir)
             self.opt.load_state_dict(checkpoint["optimizer_state_dict"])
@@ -621,7 +622,7 @@ def diffusion_resample(args, exp_paths, batch_size=16, device='cpu'):
             )
             ddpm_posterior.scheduler.set_timesteps(sampling_length)
 
-            prior_posterior_gfn = PosteriorPriorDGFN_HF(
+            prior_posterior_gfn = PosteriorPriorDGFN(
                 dim=(args[exp_name].channels, args[exp_name].image_size, args[exp_name].image_size),
                 traj_length=args[exp_name].traj_length,
                 sampling_length=args[exp_name].sampling_length,
@@ -769,7 +770,7 @@ class ReinforceFinetuneTrainer:
 
         self.sampler, self.opt = self.accelerator.prepare(self.sampler, self.opt)
 
-    def train(self, finetune_class, epochs=5000, **sampler_kwargs):
+    def run(self, finetune_class, epochs=5000, **sampler_kwargs):
 
         it = 0
 
