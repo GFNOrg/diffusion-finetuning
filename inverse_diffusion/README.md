@@ -1,6 +1,7 @@
-# Inverse Problems with score based diffusion
-Inverse Problems with score based diffusion
+# Amortizing intractable inference in diffusion models for vision, language, and control
+Code to finetune a Diffusion posterior from an unconditional diffusion prior. The code base was written to be compatible with the Diffusers library, from HuggingFace.
 
+![alt text](samples/cls_finetuning_samples.png "Prior Posterior Samples")
 
 
 ## File Structure
@@ -13,32 +14,24 @@ Inverse Problems with score based diffusion
 - `results/`: Stores local results (can be redirected).
 
 
-### Dataset Generation
-
-To prepare datasets for experiments, run `create_data.py` in `src`. Set `PATH_TO_DATA` to the desired storage location.
-
-Supported datasets: `mnist`, `cifar`, `utkface`.
-
-##### Example Command
-
-```bash
-python create_data.py --data_path PATH_TO_DATA
-```
-
-
 ### Training a Prior Model Locally
-Train a prior model locally using `train_prior.py`. The results will be in saved in `./results/` folder unless the `--save_folder` argument is set. Supported models are currently `ScoreNet`, `UNet`. 
-###### NOTE: most arguments are only examplar, and will quickly become outdated. Check the ".sh" scripts for up-to-date running examples.
-##### Example Command
-```bash
-python train_prior.py --batch_size 64 --traj_length 200 --data_path PATH_TO_DATA --load_path ./src/models/pretrained --dataset 'mnist' --lr 1e-3 --epochs 5000 --sampling_length 100 --model UNet --exp_name first_experiment
-```
-
+Train a prior model locally using `train_prior.py`. The results will be in saved in `./results/` folder unless the `--save_folder` argument is set. 
 
 ### Fine-Tuning a Pretrained Model
 
-To fine-tune, move pretrained weights to `src/models/pretrained/`. Use `finetune_posterior.py` for fine-tuning.
+To finetune you must run the `finetune_posterior.py` file. Remember to substitute `PATH-TO-DATA` and `PATH-TO-RESULTS`. The supported datasets and `mnist` and `cifar-10`. For each, the prior model to use has already been hardcoded in our library, and will be automatically retrieved from the hugging face database. Should you want to try other prior models this can be done. Note, for best results, use prior models trained with large variance scheduling.
 ##### Example Command
 ```bash
-python finetune_posterior.py --traj_length 200 --data_path PATH_TO_DATA --load_path ./src/models/pretrained --dataset mnist --lr 1e-5 --sampling_length 100 --batch_size 32 --epochs 10000 --model UNet --finetune_class 7 --exp_name second_experiment
+python ../finetune_posterior.py --data_path PATH-TO-DATA --save_folder PATH-TO-RESULTS \
+                                --load_path ./../models/pretrained --dataset mnist --lr 6e-4 \
+                                --sampling_length 100 --batch_size 32 --accumulate_gradient_every 1 \
+                                --epochs 5000 --finetune_class 7 --compute_fid True --checkpointing True \
+                                --push_to_hf False --method gfn --exp_name example_run
+```
+
+# Paper
+
+If you have found any of our work useful for your own project, please cite our paper:
+```bash
+citation
 ```
