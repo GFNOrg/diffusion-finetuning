@@ -1,5 +1,5 @@
 # Amortizing intractable inference in diffusion models for vision, language, and control
-Code to finetune a Diffusion posterior from an unconditional diffusion prior. The code base was written to be compatible with the Diffusers library, from HuggingFace.
+Code to finetune a Diffusion posterior from an unconditional diffusion prior. The code base was written to be compatible with the [Diffusers](https://huggingface.co/docs/diffusers/en/index) library.
 
 ![alt text](samples/cls_finetuning_samples.png "Prior Posterior Samples")
 
