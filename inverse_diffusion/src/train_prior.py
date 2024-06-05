@@ -50,45 +50,25 @@ train_dataset = data_dict['train_data']
 train_loader = data_dict['train_loader']
 x_dim = (args.image_size, args.image_size, args.channels)
 
-# model = UNet2DModel(
-#     sample_size=args.image_size,  # the target image resolution
-#     in_channels=args.channels,  # the number of input channels, 3 for RGB images
-#     out_channels=args.channels,  # the number of output channels
-#     layers_per_block=2,  # how many ResNet layers to use per UNet block
-#     block_out_channels=args.block_out_channels
-# )
-# TO REMOVE
-model_id = "google/ddpm-celebahq-256"
-ddpm = DDPMPipeline.from_pretrained(model_id)
-noise_scheduler = ddpm.scheduler
-model = ddpm.unet
-model.train()
-
-noise_scheduler = DDPMGFNScheduler.from_config(noise_scheduler.config)
-noise_scheduler.variance_type = 'fixed_large'
-noise_scheduler.config.variance_type = 'fixed_large'
-noise_scheduler.config['variance_type'] = 'fixed_large'
-########
-
-# model = UNet2DModel(
-#     sample_size=args.image_size,  # the target image resolution
-#     in_channels=args.channels,  # the number of input channels, 3 for RGB images
-#     out_channels=args.channels,  # the number of output channels
-#     layers_per_block=2,  # how many ResNet layers to use per UNet block
-#     block_out_channels=args.block_out_channels
-# )
+model = UNet2DModel(
+    sample_size=args.image_size,  # the target image resolution
+    in_channels=args.channels,  # the number of input channels, 3 for RGB images
+    out_channels=args.channels,  # the number of output channels
+    layers_per_block=2,  # how many ResNet layers to use per UNet block
+    block_out_channels=args.block_out_channels
+)
 
 print(f'Total params: \nFwd policy model: {(sum(p.numel() for p in model.parameters()) / 1e6):.2f}M ')
 
 
-# noise_scheduler = DDPMGFNScheduler(
-#     num_train_timesteps=args.traj_length,
-#     beta_end=0.02,
-#     beta_schedule="linear",
-#     beta_start=0.0001,
-#     clip_sample=True,
-#     variance_type='fixed_large'
-# )
+noise_scheduler = DDPMGFNScheduler(
+    num_train_timesteps=args.traj_length,
+    beta_end=0.02,
+    beta_schedule="linear",
+    beta_start=0.0001,
+    clip_sample=True,
+    variance_type='fixed_large'
+)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 lr_scheduler = get_cosine_schedule_with_warmup(
