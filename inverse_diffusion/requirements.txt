@@ -14,7 +14,7 @@ peft==0.10.0
 Pillow==10.3.0
 pytorch_fid==0.3.0
 scheduling_utils==0.2.3
-torch==2.1.2
+torch==2.2.0
 torchvision==0.16.2
 tqdm==4.66.1
 wandb==0.16.6
