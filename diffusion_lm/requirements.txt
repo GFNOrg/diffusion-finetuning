@@ -7,7 +7,7 @@ async-timeout==4.0.3
 attrs==23.2.0
 beartype==0.14.1
 better-abc==0.0.3
-certifi==2022.12.7
+certifi==2024.7.4
 charset-normalizer==2.1.1
 click==8.1.7
 cloudpickle==3.0.0
