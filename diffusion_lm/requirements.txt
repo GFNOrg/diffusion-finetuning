@@ -62,7 +62,7 @@ submitit==1.5.1
 sympy==1.12
 tokenizers==0.15.2
 torch==2.0.1
-tqdm==4.66.2
+tqdm==4.66.3
 transformer-lens==1.14.0
 transformers==4.38.1
 triton==2.0.0
