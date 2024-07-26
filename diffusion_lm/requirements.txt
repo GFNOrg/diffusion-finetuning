@@ -61,7 +61,7 @@ smmap==5.0.1
 submitit==1.5.1
 sympy==1.12
 tokenizers==0.15.2
-torch==2.0.1
+torch==2.2.0
 tqdm==4.66.3
 transformer-lens==1.14.0
 transformers==4.38.1
