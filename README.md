@@ -1,10 +1,10 @@
 # Amortizing intractable inference in diffusion models for vision, language, and control
 
-This repository contains code for learning posteriors with diffusion priors and arbitrary constraints using _relative trajectory balance_ (RTB) introduced in
+This repository contains code for learning posteriors with diffusion priors and arbitrary constraints using _relative trajectory balance_ (RTB) introduced in the NeurIPS 2024 paper
 
 **Amortizing intractable inference in diffusion models for vision, language, and control**
 
-Siddarth Venkatraman*, Moksh Jain*, Luca Scimeca*, Minsu Kim*, Marcin Sendera*, Mohsin Hasan, Luke Rowe, Sarthak Mittal, Pablo Lemos, Emmanuel Bengio, Alexandre Adam, Jarrid Rector-Brooks, Yoshua Bengio, Glen Berseth, Nikolay Malkin
+Siddarth Venkatraman*, Moksh Jain*, Luca Scimeca*, Minsu Kim*, Marcin Sendera*, Mohsin Hasan, Luke Rowe, Sarthak Mittal, Pablo Lemos, Emmanuel Bengio, Alexandre Adam, Jarrid Rector-Brooks, Yoshua Bengio, Glen Berseth, Esmeralda S. Whitammer
 
 [arXiv](https://arxiv.org/abs/)
 
